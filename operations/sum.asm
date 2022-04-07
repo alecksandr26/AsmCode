@@ -18,6 +18,7 @@ _start:
 	mov byte [res], al			; here we save the operation in the res
 	call _getOutput
 	
+	
 
 	
 last:

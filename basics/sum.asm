@@ -1,5 +1,5 @@
 	;; To compile this program we run these commands
-	;; ysam -g dwarf2 -f elf64 file.asm -l output.lst | To create the object file
+	;; ysam -g dwarf2 -f elf64 file.asm -l output.lst ;; To create the object file
 	;; 
 	;; -g dwarf2 is to put the symbols for the debuggin
 	;; -f elf64 to speficy to compile in 64 bit
@@ -37,7 +37,6 @@
 	section .text
 	global _start
 _start:
-
 	;; In this part from our code we need to use our registers to be able to do the operation
 	;; In this we are going to use just the 32 bits registers
 	;; For that reason we need to be speficy how many bits we are going to transfer
