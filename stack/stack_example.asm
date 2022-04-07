@@ -16,7 +16,7 @@ main:
 	mov r12, 0
 	mov rax, 0
 	; Here we are pussing one byte to the stack lets see 
-	push qword [rbx + r12]
+	push qword [rbx + r12 * 8]
 
 	; To pop back from the stack our data 
 	pop rax
