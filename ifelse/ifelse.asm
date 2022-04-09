@@ -14,28 +14,20 @@
 	global _start
 	
 _start:
-	;; Now lets check
-	mov edx, dword [num]
 	mov rax, 1
 	mov rdi, 1
-	cmp edx, 0x1
+	cmp dword [num], 0x1
 	je if_true
-	jne if_false
-	
-	
-if_false:
 	mov rsi, text_false
 	mov rdx, text_false_len
-	syscall
-	call last
-
+	jmp last
+	
 if_true:
 	mov rsi, text_true
 	mov rdx, text_true_len
-	syscall
-	call last
 	
 last:
+	syscall
 	mov rax, SYS_EXIT
 	mov rdi, EXIT_SUCCESS
 	syscall

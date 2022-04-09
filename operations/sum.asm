@@ -19,8 +19,6 @@ _start:
 	call _getOutput
 	
 	
-
-	
 last:
 	mov rax, 60
 	mov rdi, 0
