@@ -14,16 +14,14 @@
 	global _start
 
 sum:							; Fisrt I declare where is going to be that segment of code
-	mov ebx, dword [num] ; Here We do the sum
-	mov eax, dword [num2]
-	add dword [res], eax
-	add dword [res], ebx
+	mov eax, dword [num] ; Here We do the sum
+	add eax, dword [num2]
 	ret							; Here we return from the function
 	
 	
 _start:
 	call  sum					; Here I call the function "push rip, jmp sum"
-	mov eax, dword [res]		; Here I move the result to the rax register
+	mov dword [res], eax		; Here I move the result to the rax register
 
 last:	
 	mov rax, SYS_exit

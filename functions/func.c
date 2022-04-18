@@ -1,14 +1,18 @@
 #include <stdio.h>
 
-int a = 1, b = 1, r;
 
-void sum ()
+int sum (a, b)
 {
-	r = a + b;
+    return a + b;
 }
 
 int main ()
 {
-	sum();
+    int a, b, r;
+    
+    a = 2;
+    b = 4;
+    
+	r = sum(a, b);
 	return 0;
 }
