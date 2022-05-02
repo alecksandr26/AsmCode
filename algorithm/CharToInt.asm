@@ -7,7 +7,6 @@
 
 	;; Here we are going to put the data
 	charNum db "2022",0xa,NULL
-	lenChar equ $-charNum
 
 
 	;;  Here we are going to reserve some bytes
@@ -30,6 +29,8 @@ firstLoop:
 	mov cl, byte [charNum+rdi]
 	cmp ecx, 0xa				; If it is the jump line
 	je endFirstloop				; Here we jump to finish to multiply
+    cmp rcx, NULL
+    je endFirstloop
 	mov eax, dword [numToMul]
 	mov ebx, 0xa
 	mul ebx						; eax * ebx -> eax:edx

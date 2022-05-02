@@ -1,20 +1,18 @@
-    ;;  This is a program that calculate the mean value from a segment of data
+    ;;  this is my code that I want to include to my main file
+    ;;  we need to put in global the function stat1
+
     section .data
-    EXIT_SUCCESS equ 0
-    EXIT_sys equ 60
-    
-    arr dd 1, 2, 3, 4, 5       ; An array
-    len dd 5
 
     section .bss
-    sum resd 1                  ; 4 bytes
-    ave resd 1                  ; 4 bytes
+    
+    
     
     section .text
-    global _start
+    ;;  Like this 
+    global stat1
 
     
-    ;; stat1(arr, len, sum, ave)
+    ;; stat1(int arr, int len, int sum, int ave)
     ;; arr: array of data -> address rdi
     ;; len: The length of the array -> rsi
     ;; sum: The summation of the data -> address rdx
@@ -35,17 +33,3 @@ doLoop:
     
     mov dword [rcx], eax        ; Put the result on the direction
     ret                         ; And return 
-
-    
-    ;; Lets execute our function
-_start:
-    mov rdi, arr                ; Move the direction of the arr to rdi
-    mov esi, dword [len]        ; Move the len to esi
-    mov rdx, sum                ; Put the result direction of the sum
-    mov rcx, ave                ; Put the result direction of the average
-    call stat1                  ; Now we call the function
-
-last:
-    mov rax, EXIT_sys
-    mov rdi, EXIT_SUCCESS
-    syscall

