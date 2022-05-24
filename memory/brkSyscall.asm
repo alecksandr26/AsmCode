@@ -38,6 +38,15 @@ _start:
     syscall
     mov qword [current_break], rax ; get the address
     mov qword [initial_break], rax ; get the address
+
+    ;; from this address we can allocate memory
+    ;; how ??? easy, just do again the syscall
+    mov rax, SYS_brk
+    mov rdi, [current_break]    ; put like argument the new address
+    add rdi, 8                  ; move the address 8 bytes
+    syscall
+    ;; now we have a frame
+    
     
 
     
