@@ -1,5 +1,5 @@
 # AsmCode
-My nasm programs, it is just a simple recopilation of a bunch of my codes in nasm
+My nasm code that i made from this book [assembly64.pdf](assembly64.pdf).
 # Projects
 Here is the directory of some of my asm projects.
 1. [allocator](projects/allocator/)
