@@ -7,6 +7,8 @@
     section .bss
     curr_brk resq 1             ; address of the current heap
     new_brk resq 1              ; address of the new heap
+    top_brk resq 1              ; address of the top of the heap
+    init_brk resq 1             ; the initial address of the heap
 
     section .text
     global alloc
