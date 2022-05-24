@@ -19,7 +19,6 @@
     ;; the brk address always it is going to start at 0x0 address
     initial_break dq NULL
     current_break dq NULL
-    new_break dq NULL
     
     SYS_brk equ 12
     
@@ -45,11 +44,23 @@ _start:
     mov rdi, [current_break]    ; put like argument the new address
     add rdi, 8                  ; move the address 8 bytes
     syscall
-    ;; now we have a frame
-    
-    
 
     
+    ;; allocate just a simple number
+    mov qword [current_break], 10 ; putting a 10 value
+    
+    ;; now we have a frame
+    mov qword [current_break], rax ; update the current break
+
+    ;; now to free that memory we need to run again the syscall brk
+    mov rax, SYS_brk
+    mov rdi, qword [current_break] ; move the break
+    sub rdi, 8                     ; move the address 8 bytes down
+    syscall                        ; do the syscall
+    ;; now we free the memory
+
+    mov qword [current_break], rax ; assign again the current break
+
 last:
     mov rax, SYS_exit
     mov rdi, EXIT_SUCCESS
