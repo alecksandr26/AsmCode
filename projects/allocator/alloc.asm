@@ -31,7 +31,7 @@
 
     section .bss
     init_brk resq 1             ; the initial address of the heap
-    free_heap resq 1            ; the address of the free heap buffer
+    free_heap resq 1            ; the address where we store the memory
     new_brk resq 1              ; the new address of the heap  
 
     section .text
@@ -69,7 +69,7 @@ alloc:
     ;; get the address of the heap 
     mov qword [free_heap], rax
 
-    ;; try to create our frame of memory 
+    ;; try to create our frame of memory for free address 
     mov rdi, rax
     mov rax, SYS_brk    
     add rdi, FREE_CAPACITY 
@@ -139,7 +139,8 @@ free:
 
     ;; get the current address
     mov rax, qword [curr_brk]
-    
+
+    sub rdi, 2                  ; subtract by 2
     cmp rax, rdi                ; if (rax < rdi)
     jb __free__error
 
@@ -150,11 +151,16 @@ free:
     cmp rdi, rax                ; if (rdi < rax)
     jb __free__error
 
-    mov r8w, word [rdi - 2] ; get the size of the chuck
+    ;; first calculate the size of the free heap buffer
+    mov eax, 8             
+    mul dword [size_free]              ; multiply the size with 8 bytes
 
-    
+    ;; lets move the pointer
+    mov rbx, qword [free_heap]  ; get the address of the buffer
+    add rbx, rax                ; move the address of the buffer
 
-
+    mov qword [rbx], rdi        ; allocate the free address
+    inc dword [size_free]       ; increment the size of the free heap
     
     jmp __free__last
     
