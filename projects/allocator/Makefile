@@ -14,3 +14,6 @@ main.o: main.asm
 main: $(BINS)
 	$(C) $(BINS) -o main
 
+clean:
+	rm $(BINS) main
+

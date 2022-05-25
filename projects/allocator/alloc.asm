@@ -14,41 +14,68 @@
 
     ;; Variables
     size dd 0
-    
+
+    curr_brk dq NULL             ; address of the current heap
+    new_brk dq NULL              ; address 
 
     section .bss
-    curr_brk resq 1             ; address of the current heap
-    new_brk resq 1              ; address of the new heap
-    top_brk resq 1              ; address of the top of the heap
-    init_brk resq 1             ; the initial address of the heap
-
     
 
     section .text
     global alloc
     global free
 
+    
     ;; void *alloc(unsigned amount_bytes)
     ;; amount_bytes -> edi      ; the amount of bytes that we want
     ;; alloc: return the amount the address of the page of the memory that we want
 alloc:
     push rbp
     mov rbp, rsp
+    sub rsp, 8                  ; Create the frame to store the amount_bytes
 
-    ;; create the memory frame doing the brk syscall
-    
+    ;; check the capacity
     cmp edi, CAPAICTY
     ja error_alloc
 
-    add dword [size], edi       ; add the amount of bytes to the size
+    ;; save the size
+    mov dword [rbp-8], edi
+
+    ;; get the current address of the brk
+    mov rax, SYS_brk
+    mov rdi, new_brk
+    syscall
+
+    ;; getting the current address
+    mov qword [curr_brk], rax
+    mov qword [new_brk], rax
+
+    ;; get again the size
+    mov rdi, qword [rbp-8]
+
+    ;; create the new frame
+    add qword [new_brk], rdi
+    add dword [size], edi
+
+    ;; set the new address
+    mov rax, SYS_brk
+    mov rdi, qword [new_brk]
+    syscall
+
+    ;; compare if somethings come wrong trying to move the break addres
+    cmp rax, qword [curr_brk]
+    je error_alloc
+
+    ;; put the return value 
+    mov rax, qword [curr_brk]
     
     jmp last_alloc
-    
     
 error_alloc:
     mov rax, NULL                 ; putting a null address
 
 last_alloc:
+    add rsp, 8
     pop rbp
     ret
     

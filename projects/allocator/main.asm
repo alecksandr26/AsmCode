@@ -27,7 +27,7 @@
     section .text
     global _start
 _start:
-    mov rdi, 650000             ; put a lot of memory
+    mov rdi, 26                 ; I want 26 bytes
     call alloc
 
     cmp rax, NULL               ; rax == null ; jump error
@@ -39,6 +39,10 @@ error:
     mov rdi, STDOUT
     mov rsi, alloc_error_msg
     mov rdx, alloc_error_msg_len
+    syscall
+
+    mov rax, SYS_exit
+    mov rdi, EXIT_FAILURE
     syscall
     
 last:                           ; get out 
