@@ -11,7 +11,9 @@
     STDOUT equ 1
 
     ;; Capacity of the free address
-    FREE_CAPACITY equ 8192         ; 8 kilo bytes
+    FREE_CAPACITY equ 10240         ; 10 kilo bytes
+    FREE_CAPACITY_SIZE equ 1024     ; the size of each 1024
+    NODE_CAPACITY_SIZE equ 10       ; bytes
 
     NULL equ 0
     LF equ 0xa
@@ -124,6 +126,29 @@ __alloc__last:
     sub rdi, 2
     
     add rsp, 8
+    pop rbp
+    ret
+
+
+    ;; void __tree_balance()
+    ;; __tree_balance: Just balance the tree in a way mantain the runtimes
+__tree_balance:
+    push rbp
+    mov rbp, rsp
+
+    
+    pob rbp
+    ret
+    
+
+    ;; void __tree_add_node(void *addr)
+    ;; addr -> rdi
+    ;; __tree_add_node: Just add to the binary tree the node 
+__tree_add_node:  
+    push rbp
+    mov rbp, rsp
+
+    
     pop rbp
     ret
     
