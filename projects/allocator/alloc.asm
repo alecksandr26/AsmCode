@@ -159,6 +159,7 @@ free:
     mov r8, qword [free_heap]  ; get the address of the buffer
     add r8, rax                ; move the address of the buffer
 
+    ;; Now this is problematic this will become O(N) and we need O(logN)
     mov qword [r8], rdi        ; allocate the free address
     inc dword [size_free]       ; increment the size of the free heap
     
