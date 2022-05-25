@@ -4,6 +4,11 @@
     ;; Constants
     SYS_brk equ 12
 
+    ;; Capacity of the heap
+    CAPAICTY equ 640000         ; 64 kilo bytes
+
+    NULL equ 0
+
     section .bss
     curr_brk resq 1             ; address of the current heap
     new_brk resq 1              ; address of the new heap
@@ -25,6 +30,12 @@ alloc:
     ;; addr -> rdi              ; the address of the page of memory to free
     ;; free: free a block of memory
 free:
+
+
+    ;; void collect()
+    ;; collect: simple garbage collector of the heap
+collect:
+    
     
     
     
