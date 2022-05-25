@@ -34,8 +34,14 @@
 alloc:
     push rbp
     mov rbp, rsp
+
+    ;; create the memory frame doing the brk syscall
+    
     cmp edi, CAPAICTY
     ja error_alloc
+
+    add dword [size], edi       ; add the amount of bytes to the size
+    
     jmp last_alloc
     
     
@@ -54,7 +60,7 @@ free:
 
 
     ;; void collect()
-    ;; collect: simple garbage collector of the heap
+    ;; collect: simple garbage collector to the heap
 collect:
     
     
