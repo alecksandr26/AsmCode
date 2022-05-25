@@ -30,6 +30,24 @@ _start:
     mov rdi, 26                 ; I want 26 bytes
     call alloc
 
+    ;; then lets fill this chuck of memory
+    mov rdx, 0
+    
+loop:
+    cmp dl, 26
+    je done_loop
+
+    mov bl, dl
+    add bl, 65
+    mov byte [rax+rdx], bl
+    inc dl
+    
+    jmp loop
+
+done_loop:
+    
+    
+
     cmp rax, NULL               ; rax == null ; jump error
     je error                    ; if there is an error print this 
     jmp last                    ; otherwire we jump to finish the program

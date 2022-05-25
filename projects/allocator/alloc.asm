@@ -34,6 +34,13 @@ alloc:
     mov rbp, rsp
     sub rsp, 8                  ; Create the frame to store the amount_bytes
 
+    ;; can't receive zero amount_bytes
+    cmp edi, NULL
+    ja error_alloc
+
+    ;; increment the real capcity by two bytes
+    add edi, 2
+    
     ;; check the capacity
     cmp edi, CAPAICTY
     ja error_alloc
@@ -51,13 +58,13 @@ alloc:
     mov qword [new_brk], rax
 
     ;; get again the size
-    mov rdi, qword [rbp-8]
+    mov edi, dword [rbp-8]
 
-    ;; create the new frame
+    ;; create the new chuck of memory
     add qword [new_brk], rdi
     add dword [size], edi
 
-    ;; set the new address
+    ;; set the new break address
     mov rax, SYS_brk
     mov rdi, qword [new_brk]
     syscall
@@ -65,6 +72,14 @@ alloc:
     ;; compare if somethings come wrong trying to move the break addres
     cmp rax, qword [curr_brk]
     je error_alloc
+
+    ;; take two bytes and put the size of chuck these are metadata
+    mov di, word [rbp - 8]
+    sub di, 2
+    mov word [rax], di
+
+    ;; increment the address by 2
+    add rax, 2
 
     ;; put the return value 
     mov rax, qword [curr_brk]
