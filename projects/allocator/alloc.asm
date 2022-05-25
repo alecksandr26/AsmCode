@@ -3,17 +3,26 @@
     section .data
     ;; Constants
     SYS_brk equ 12
+    SYS_write equ 1
+    STDOUT equ 1
 
     ;; Capacity of the heap
     CAPAICTY equ 640000         ; 64 kilo bytes
 
     NULL equ 0
+    LF equ 0xa
+
+    ;; Variables
+    size dd 0
+    
 
     section .bss
     curr_brk resq 1             ; address of the current heap
     new_brk resq 1              ; address of the new heap
     top_brk resq 1              ; address of the top of the heap
     init_brk resq 1             ; the initial address of the heap
+
+    
 
     section .text
     global alloc
@@ -23,8 +32,20 @@
     ;; amount_bytes -> edi      ; the amount of bytes that we want
     ;; alloc: return the amount the address of the page of the memory that we want
 alloc:
+    push rbp
+    mov rbp, rsp
+    cmp edi, CAPAICTY
+    ja error_alloc
+    jmp last_alloc
     
+    
+error_alloc:
+    mov rax, NULL                 ; putting a null address
 
+last_alloc:
+    pop rbp
+    ret
+    
 
     ;; void free(void *addr)
     ;; addr -> rdi              ; the address of the page of memory to free
