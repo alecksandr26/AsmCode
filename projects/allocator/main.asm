@@ -21,36 +21,54 @@
     alloc_error_msg db "Error: trying to allocate memory", LF, NULL
     alloc_error_msg_len equ $ - alloc_error_msg
 
+    two dq 2
+
 
     section .bss
+    addr resq 1
 
     section .text
     global _start
 _start:
-    mov rdi, 26                 ; I want 26 bytes
-    call alloc
-
-    ;; then lets fill this chuck of memory
-    mov rdx, 0
+    ;; running a new test
+    mov rbx, 0
     
+
 loop:
-    cmp dl, 26
+    cmp rbx, 100
     je done_loop
 
-    mov bl, dl
-    add bl, 65
-    mov byte [rax+rdx], bl
-    inc dl
+    mov rdi, rbx
+    inc rdi
+    call alloc
+    mov qword [addr], rax
+
+    cmp rax, NULL               ; rax == null ; jump error 
+    je error                    ; if there is an error print this
     
+    ;;  allocate the number
+    mov byte [rax], dil
+
+    ;; if (rax % 2 == 0)
+    mov rax, rdi
+    div qword [two]
+    cmp rdx, NULL
+    jne continue
+
+    ;; otherwire we free the memory
+    mov rdi, qword [addr]
+    call free
+    
+continue:   
+   
+    inc rbx
     jmp loop
+    
+
 
 done_loop:
     
-    
-
-    cmp rax, NULL               ; rax == null ; jump error
-    je error                    ; if there is an error print this 
-    jmp last                    ; otherwire we jump to finish the program
+    jmp last                    ; finish the program is anything comes wrong
 
 error:
     mov rax, SYS_write
