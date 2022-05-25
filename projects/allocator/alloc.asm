@@ -134,7 +134,7 @@ __alloc__last:
 free:
     push rbp
     mov rbp, rsp
-
+    
     ;; verified the address 
 
     ;; get the current address
@@ -156,10 +156,10 @@ free:
     mul dword [size_free]              ; multiply the size with 8 bytes
 
     ;; lets move the pointer
-    mov rbx, qword [free_heap]  ; get the address of the buffer
-    add rbx, rax                ; move the address of the buffer
+    mov r8, qword [free_heap]  ; get the address of the buffer
+    add r8, rax                ; move the address of the buffer
 
-    mov qword [rbx], rdi        ; allocate the free address
+    mov qword [r8], rdi        ; allocate the free address
     inc dword [size_free]       ; increment the size of the free heap
     
     jmp __free__last
@@ -176,7 +176,7 @@ __free__error:                   ; If we receive an invalid address
     mov rdi, EXIT_FAILURE
     syscall
     
-__free__last:    
+__free__last:
     pop rbp
     ret
     
