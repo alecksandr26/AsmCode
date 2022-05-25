@@ -11,7 +11,7 @@
     STDOUT equ 1
 
     ;; Capacity of the free address
-    FREE_CAPAICTY equ 8192         ; 8 kilo bytes
+    FREE_CAPACITY equ 8192         ; 8 kilo bytes
 
     NULL equ 0
     LF equ 0xa
@@ -19,8 +19,10 @@
     ;; Variables
     size dd 0
 
+    ;; the amount of free chucks that we have
+    size_free dd 0
+
     curr_brk dq NULL             ; address of the current heap
-    new_brk dq NULL              ; the new address of the heap
 
     
     free_error_msg db "Error: Invalid address to free", LF, NULL
@@ -29,6 +31,8 @@
 
     section .bss
     init_brk resq 1             ; the initial address of the heap
+    free_heap resq 1            ; the address of the free heap buffer
+    new_brk resq 1              ; the new address of the heap  
 
     section .text
     global alloc
@@ -57,17 +61,29 @@ alloc:
     mov rax, SYS_brk
     mov rdi, new_brk
     syscall
-
+    
     cmp qword [curr_brk], NULL
-    jne __alloc_else
-
+    jne __alloc__else
     ;; this means that it is the first time running an alloc
-    add rax, FREE_CAPAICTY 
 
+    ;; get the address of the heap 
+    mov qword [free_heap], rax
+
+    ;; try to create our frame of memory 
+    mov rdi, rax
+    mov rax, SYS_brk    
+    add rdi, FREE_CAPACITY 
+    syscall
+
+    cmp rax, qword [free_heap]                ; if this is true there is an error
+    je __alloc__error
+    
+    
     ;; get the initial brk address
     mov qword [init_brk], rax
-
-__alloc_else:
+__alloc__else:
+    
+    
     ;; getting the current address
     mov qword [curr_brk], rax
     mov qword [new_brk], rax
@@ -79,7 +95,6 @@ __alloc_else:
     add qword [new_brk], rdi
     inc dword [size]
 
-    ;; set the new break address
     mov rax, SYS_brk
     mov rdi, qword [new_brk]
     syscall
@@ -87,7 +102,6 @@ __alloc_else:
     ;; compare if somethings come wrong trying to move the break addres
     cmp rax, qword [curr_brk]
     je __alloc__error
-
     
     ;; put the return value 
     mov rax, qword [curr_brk]
@@ -95,7 +109,8 @@ __alloc_else:
     ;; take two bytes and put the size of chuck these are metadata
     mov di, word [rbp - 8]
     sub di, 2
-    mov word [rax], di
+    mov word [rax], di          ; put the size of chuck
+    
     ;; increment the address by 2
     add rax, 2
     
