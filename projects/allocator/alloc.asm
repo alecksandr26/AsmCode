@@ -10,40 +10,48 @@
     SYS_write equ 1
     STDOUT equ 1
 
-    ;; Capacity of the free address
-    FREE_CAPACITY equ 8192         ; 8 kilo bytes
-    FREE_CAPACITY_SIZE equ 1024     ; the size of each 1024
-
     NULL equ 0
     LF equ 0xa
 
     ;; Variables
     size dd 0
 
-    ;; the amount of free chucks that we have
-    size_free dd 0
-
     curr_brk dq NULL             ; address of the current heap
-
     
     free_error_msg db "Error: Invalid address to free", LF, NULL
     free_error_msg_len equ $ - free_error_msg
 
     ;; heap variables
+
+    ;; Capacity of the free address
+    HEAP_FREE_CAPACITY equ 8192         ; 8 kilo bytes
+    HEAP_FREE_CAPACITY_SIZE equ 1024     ; the size of each 1024
+
+    ;; the amount of free chucks that we have
+    heap_size_free dd 0
     
-    
+
 
     section .bss                ; the variables 
     
     init_brk resq 1             ; the initial address of the heap
     free_heap resq 1            ; the address where we store the memory
-    new_brk resq 1              ; the new address of the heap  
+    new_brk resq 1              ; the new address of the heap
+
+    ;; heap variables
+    heap_addr resq 1            ; 8 bytes for the heap root address
 
     section .text
     
     ;; These are the public methods 
     global alloc
     global free
+
+
+    ;; short __heap__get__chunk__size(void *addr)
+    ;; addr -> rdi          The address of the chuck of memory
+    ;; __heap__get__chunk__size: Return the size of the chunk of memory
+__heap__get__chuck__size:   
 
 
 
@@ -105,7 +113,7 @@ alloc:
     ;; try to create our frame of memory for free address 
     mov rdi, rax
     mov rax, SYS_brk    
-    add rdi, FREE_CAPACITY 
+    add rdi, HEAP_FREE_CAPACITY
     syscall
 
     cmp rax, qword [free_heap]                ; if this is true there is an error
@@ -187,7 +195,7 @@ free:
 
     ;; first calculate the size of the free heap buffer
     mov eax, 8             
-    mul dword [size_free]              ; multiply the size with 8 bytes
+    mul dword [heap_size_free]              ; multiply the size with 8 bytes
 
     ;; lets move the pointer
     mov r8, qword [free_heap]  ; get the address of the buffer
@@ -195,7 +203,7 @@ free:
 
     ;; Now this is problematic this will become O(N) and we need O(logN)
     mov qword [r8], rdi        ; allocate the free address
-    inc dword [size_free]       ; increment the size of the free heap
+    inc dword [heap_size_free]       ; increment the size of the free heap
     
     jmp __free__last
     
