@@ -130,45 +130,6 @@ __alloc__last:
     ret
 
 
-    ;; int __max(int a, int b)
-    ;; a -> edi, b -> esi
-    ;; __max: Simple extra function to know if a tree is balanced return the max value
-__max:
-    pusb rbp
-    mov rbp, rsp
-
-    cmp edi, esi                ; if (edi > esi)
-    
-    
-    
-    pop rbp
-    ret
-    
-
-    
-
-    ;; void __tree_balance(void *addr)
-    ;; addr -> rdi             ; the node from where will return the balance 
-    ;; __tree_balance: is a recursive function that will balance the tree
-__tree_balance:
-    push rbp
-    mov rbp, rsp
-    
-    
-    pob rbp
-    ret
-    
-
-    ;; void __tree_add_node(void *addr)
-    ;; addr -> rdi
-    ;; __tree_add_node: A function that will add a new element to the tree and try to balance it
-__tree_add_node:  
-    push rbp
-    mov rbp, rsp
-
-    
-    pop rbp
-    ret
     
 
     ;; void free(void *addr)
