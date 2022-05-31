@@ -1,6 +1,6 @@
 N = nasm -f elf64
 C = ld
-BINS = main.o alloc.o 
+BINS = test.o alloc.o 
 
 
 all: main
@@ -8,8 +8,8 @@ all: main
 alloc.o: alloc.asm
 	$(N) alloc.asm
 
-main.o: main.asm
-	$(N) main.asm
+test.o: test.asm
+	$(N) test.asm
 
 main: $(BINS)
 	$(C) $(BINS) -o main
