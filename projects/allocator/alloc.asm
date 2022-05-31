@@ -11,9 +11,8 @@
     STDOUT equ 1
 
     ;; Capacity of the free address
-    FREE_CAPACITY equ 10240         ; 10 kilo bytes
+    FREE_CAPACITY equ 8192         ; 8 kilo bytes
     FREE_CAPACITY_SIZE equ 1024     ; the size of each 1024
-    NODE_CAPACITY_SIZE equ 10       ; bytes
 
     NULL equ 0
     LF equ 0xa
@@ -29,17 +28,49 @@
     
     free_error_msg db "Error: Invalid address to free", LF, NULL
     free_error_msg_len equ $ - free_error_msg
+
+    ;; heap variables
+    
     
 
-    section .bss
+    section .bss                ; the variables 
+    
     init_brk resq 1             ; the initial address of the heap
     free_heap resq 1            ; the address where we store the memory
     new_brk resq 1              ; the new address of the heap  
 
     section .text
+    
+    ;; These are the public methods 
     global alloc
     global free
 
+
+
+    ;; void *__heap__extract()
+    ;; __heap_extract: Return the address of the greater chunk of memory
+__heap__extract:
+    push rbp,
+    mov rbp, rsp
+
+
+
+    
+    pop rbp
+    ret
+
+
+
+    ;; void __heap__insert()
+    ;; __heap__insert: To insert a new chunk of memory
+__heap__insert:
+    push rbp
+    mov rbp, rsp
+
+    
+    pop rbp
+    ret
+    
     
     ;; void *alloc(unsigned amount_bytes)
     ;; amount_bytes -> edi      ; the amount of bytes that we want
@@ -130,7 +161,6 @@ __alloc__last:
     ret
 
 
-    
 
     ;; void free(void *addr)
     ;; addr -> rdi              ; the address of the page of memory to free
