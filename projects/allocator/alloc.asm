@@ -29,8 +29,8 @@
 
     ;; the amount of free chucks that we have
     heap_size_free dd 0
-    
 
+    
 
     section .bss                ; the variables 
     
@@ -39,6 +39,7 @@
     new_brk resq 1              ; the new address of the heap
 
     ;; heap variables
+    
     heap_addr resq 1            ; 8 bytes for the heap root address
 
     section .text
@@ -48,16 +49,65 @@
     global free
 
 
-    ;; short __heap__get__chunk__size(void *addr)
+    ;; Some extra functions needed
+
+    ;; short __heap_get_chunk_size(void *addr)
     ;; addr -> rdi          The address of the chuck of memory
-    ;; __heap__get__chunk__size: Return the size of the chunk of memory
-__heap__get__chuck__size:   
+    ;; __heap_get_chunk_size: Return the size of the chunk of memory
+__heap_get_chuck_size:
+    
+    ;; Get the addres of the chunk
+    mov r8, qword [rdi]
+    
+    ;; Get the size two bytes
+    mov rax, 0
+    mov ax, word [r8-2]         ; get the size of the chunk
+    
+    ret
+
+    ;; void *__heap_get_child(void *parent, unsigned char child_type)
+    ;; parent -> rdi        the parent address 
+    ;; child_type -> rdx    1 if the child is the left or 2 if the child is the right
+    ;; __heap_get_child: Return address of the child depending if it is the right child or the left child
+__heap_get_child:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    
+    mov qword [rsp], 2          ; set the number 2
+    
+    mov rax, rdi                ; Moving parent address to rax
+    mul qword [rsp]             ; multiply with 2
+
+    add rax, rdx                ; sum rax + (2 or 1) depending 
+
+    add rsp , 8
+    pop rbp
+    ret
+
+    ;; void *__heap_get_parent(void *child)
+    ;; child -> rdi     The address of the child node
+    ;; __heap_get_parent: Return the parent address of the children address
+__heap_get_parent:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+
+    mov qword [rsp], 2          ; set the number 2
+
+    mov rax, rdi                ; move the child address to rax
+    sub rax, 1                  ; subtract by 1
+    div qword [rsp]             ; get the parent address
+
+    add rsp, 8
+    pop rbp
+    ret
+    
 
 
-
-    ;; void *__heap__extract()
+    ;; void *__heap_extract()
     ;; __heap_extract: Return the address of the greater chunk of memory
-__heap__extract:
+__heap_extract:
     push rbp,
     mov rbp, rsp
 
@@ -69,9 +119,9 @@ __heap__extract:
 
 
 
-    ;; void __heap__insert()
-    ;; __heap__insert: To insert a new chunk of memory
-__heap__insert:
+    ;; void __heap_insert()
+    ;; __heap_insert: To insert a new chunk of memory
+__heap_insert:
     push rbp
     mov rbp, rsp
 
@@ -90,7 +140,7 @@ alloc:
 
     ;; can't receive zero amount_bytes
     cmp edi, NULL
-    je __alloc__error
+    je __alloc_error
 
     ;; increment the real capcity by two bytes
     add edi, 2
@@ -104,7 +154,7 @@ alloc:
     syscall
     
     cmp qword [curr_brk], NULL
-    jne __alloc__else
+    jne __alloc_else
     ;; this means that it is the first time running an alloc
 
     ;; get the address of the heap 
@@ -117,12 +167,12 @@ alloc:
     syscall
 
     cmp rax, qword [free_heap]                ; if this is true there is an error
-    je __alloc__error
+    je __alloc_error
     
     
     ;; get the initial brk address
     mov qword [init_brk], rax
-__alloc__else:
+__alloc_else:
     
     
     ;; getting the current address
@@ -142,7 +192,7 @@ __alloc__else:
 
     ;; compare if somethings come wrong trying to move the break addres
     cmp rax, qword [curr_brk]
-    je __alloc__error
+    je __alloc_error
     
     ;; put the return value 
     mov rax, qword [curr_brk]
@@ -155,12 +205,12 @@ __alloc__else:
     ;; increment the address by 2
     add rax, 2
     
-    jmp __alloc__last
+    jmp __alloc_last
     
-__alloc__error:
+__alloc_error:
     mov rax, NULL                 ; putting a null address
 
-__alloc__last:
+__alloc_last:
     mov rdi, qword [rbp-8]
     sub rdi, 2
     
@@ -184,14 +234,14 @@ free:
 
     sub rdi, 2                  ; subtract by 2
     cmp rax, rdi                ; if (rax < rdi)
-    jb __free__error
+    jb __free_error
 
     
     ;; get the initial address
     mov rax, qword [init_brk]
 
     cmp rdi, rax                ; if (rdi < rax)
-    jb __free__error
+    jb __free_error
 
     ;; first calculate the size of the free heap buffer
     mov eax, 8             
@@ -205,9 +255,9 @@ free:
     mov qword [r8], rdi        ; allocate the free address
     inc dword [heap_size_free]       ; increment the size of the free heap
     
-    jmp __free__last
+    jmp __free_last
     
-__free__error:                   ; If we receive an invalid address
+__free_error:                   ; If we receive an invalid address
     mov rax, SYS_write
     mov rdi, STDOUT
     mov rsi, free_error_msg
@@ -219,7 +269,7 @@ __free__error:                   ; If we receive an invalid address
     mov rdi, EXIT_FAILURE
     syscall
     
-__free__last:
+__free_last:
     pop rbp
     ret
     
