@@ -1,7 +1,9 @@
     ;; This is a code project where I create my own malloc in nasm
 
     section .data
+    
     ;; Constants
+    
     SYS_exit equ 60
     EXIT_FAILURE equ 1
     
@@ -13,34 +15,41 @@
     NULL equ 0
     LF equ 0xa
 
-    ;; Variables
-    size dd 0
 
-    curr_brk dq NULL             ; address of the current heap
+    ;; Constants of the heap
     
-    free_error_msg db "Error: Invalid address to free", LF, NULL
-    free_error_msg_len equ $ - free_error_msg
-
-    ;; heap variables
-
     ;; Capacity of the free address
     HEAP_FREE_CAPACITY equ 8192         ; 8 kilo bytes
     HEAP_FREE_CAPACITY_SIZE equ 1024     ; the size of each 1024
 
+    ;; Variables
+    size dd 0
+
+    curr_brk dq NULL             ; address of the current heap
+
+    ;; Message errors for free
+    free_error_msg db "Error: Invalid address to free", LF, NULL
+    free_error_msg_len equ $ - free_error_msg
+
+    ;; Message errors for heap insert function 
+    heap_insert_error_msg db "Error: Not enough space for free address", LF, NULL
+    heap_insert_error_msg_len equ $ - heap_insert_error_msg
+
+    ;; heap variables
+    
     ;; the amount of free chucks that we have
-    heap_size_free dd 0
+    heap_size_free dq 0
 
     
-
     section .bss                ; the variables 
     
-    init_brk resq 1             ; the initial address of the heap
+    init_brk resq 1             ; the initial address of the heap 
     free_heap resq 1            ; the address where we store the memory
     new_brk resq 1              ; the new address of the heap
 
     ;; heap variables
     
-    heap_addr resq 1            ; 8 bytes for the heap root address
+    heap_root_addr resq 1            ; 8 bytes for the heap root address
 
     section .text
     
@@ -111,20 +120,51 @@ __heap_extract:
     push rbp,
     mov rbp, rsp
 
+    
 
-
+    
     
     pop rbp
     ret
 
 
-
-    ;; void __heap_insert()
+    ;; void __heap_insert(void *addr)
+    ;; addr -> rdi   The new address to insert 
     ;; __heap_insert: To insert a new chunk of memory
 __heap_insert:
     push rbp
     mov rbp, rsp
 
+    mov rax, qword [heap_size_free] ; mov the amount to rax
+    cmp rax, HEAP_FREE_CAPACITY_SIZE
+    je __heap_insert_error      ; Out of capacity
+
+    ;; First insert the node
+    mov rax, 8
+    mul qword [heap_size_free]  ; calculate the position of the new address
+    add rax, qword [init_brk]   ; calculate the address
+    mov qword [rax], rdi        ; put the new address
+
+
+    jmp __heap_insert_last
+    
+__heap_insert_error:            ; If we get an error close the program
+
+    ;; Print out of capcity
+    mov rax, SYS_write
+    mov rdi, STDOUT
+    mov rsi, heap_insert_error_msg
+    mov rdx, heap_insert_error_msg_len
+    syscall
+
+    ;; Exit from the promgram with error
+    mov rax, SYS_exit
+    mov rdi, EXIT_FAILURE
+    syscall
+    
+__heap_insert_last: 
+    
+    inc qword [heap_size_free]  ; Increment the size of the heap
     
     pop rbp
     ret
