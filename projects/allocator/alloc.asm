@@ -60,19 +60,7 @@
 
     ;; Some extra functions needed
 
-    ;; short __heap_get_chunk_size(void *addr)
-    ;; addr -> rdi          The address of the chuck of memory
-    ;; __heap_get_chunk_size: Return the size of the chunk of memory
-__heap_get_chuck_size:
-    
-    ;; Get the addres of the chunk
-    mov r8, qword [rdi]
-    
-    ;; Get the size two bytes
-    mov rax, 0
-    mov ax, word [r8-2]         ; get the size of the chunk
-    
-    ret
+
 
     ;; void *__heap_get_child(void *parent, unsigned char child_type)
     ;; parent -> rdi        the parent index 
@@ -112,6 +100,37 @@ __heap_get_parent:
     pop rbp
     ret
 
+    ;; short __heap_get_chunk_size(void *addr)
+    ;; addr -> rdi          The address of the chuck of memory
+    ;; __heap_get_chunk_size: Return the size of the chunk of memory
+__heap_get_chuck_size:
+    
+    ;; Get the size two bytes
+    mov rax, 0
+    mov ax, word [rdi-2]         ; get the size of the chunk
+    
+    ret
+    
+
+    ;; void *__heap_get_address(unsigned long index)
+    ;; index -> rdi the index 
+    ;; __heap_get_address: Calculate the address of some index
+__heap_get_address:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 8
+    mov qword [rsp], 8
+    
+    mov rax, rdi
+    mul qword [rsp]
+    
+    add rax, qword [init_brk]
+
+    ;;  Get the address
+    mov rax, qword [rax]
+    pop rbp
+    ret
+
 
     ;; long __heap_compare_sizes(long parent_index, long child_index)
     ;; parent_index -> rdi
@@ -119,7 +138,36 @@ __heap_get_parent:
     ;; __heap_compare_sizes: Return -1 if parent_size < child_size or 0 if parent_size == child_size
     ;; 1 if parent_size > child_size.
 __heap_compare_sizes:
-   
+    
+    ;; Get the parent chunk size
+    call __heap_get_address
+    mov rdi, rax                ; Move the address to rdi
+    call __heap_get_chuck_size
+    mov rbx, rax                ; Now move the size to rb
+
+    
+    mov rdi, rsi                ; move the index of the child node
+    ;; Get the child size
+    call __heap_get_address
+    mov rdi, rax
+    call __heap_get_chuck_size  ; Now get the chunk size
+
+    ;; Now compare the sizes
+    cmp rax, rbx                ; if (child_size > parent_size)
+    ja __heap_compare_sizes_if
+    cmp rax, rbx                ; else if (child_size == parent_size)
+    je __heap_compare_sizes_else_if
+    mov rax, -1                 ; else
+    ret
+    
+__heap_compare_sizes_if:
+    mov rax, 1
+    ret                         ; And return
+    
+__heap_compare_sizes_else_if:
+    mov rax, 0
+    ret
+        
     
 
 
