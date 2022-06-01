@@ -75,9 +75,9 @@ __heap_get_chuck_size:
     ret
 
     ;; void *__heap_get_child(void *parent, unsigned char child_type)
-    ;; parent -> rdi        the parent address 
+    ;; parent -> rdi        the parent index 
     ;; child_type -> rdx    1 if the child is the left or 2 if the child is the right
-    ;; __heap_get_child: Return address of the child depending if it is the right child or the left child
+    ;; __heap_get_child: Return the index of the child depending if it is the right child or the left child
 __heap_get_child:
     push rbp
     mov rbp, rsp
@@ -95,8 +95,8 @@ __heap_get_child:
     ret
 
     ;; void *__heap_get_parent(void *child)
-    ;; child -> rdi     The address of the child node
-    ;; __heap_get_parent: Return the parent address of the children address
+    ;; child -> rdi     The index of the buffer
+    ;; __heap_get_parent: Return the parent index of the children index
 __heap_get_parent:
     push rbp
     mov rbp, rsp
@@ -111,6 +111,15 @@ __heap_get_parent:
     add rsp, 8
     pop rbp
     ret
+
+
+    ;; long __heap_compare_sizes(long parent_index, long child_index)
+    ;; parent_index -> rdi
+    ;; child_index -> rsi
+    ;; __heap_compare_sizes: Return -1 if parent_size < child_size or 0 if parent_size == child_size
+    ;; 1 if parent_size > child_size.
+__heap_compare_sizes:
+   
     
 
 
@@ -145,6 +154,24 @@ __heap_insert:
     add rax, qword [init_brk]   ; calculate the address
     mov qword [rax], rdi        ; put the new address
 
+    ;; Now calculate the parent address 
+    mov rdi, qword [heap_size_free]
+    call __heap_get_parent
+
+    ;; save the index
+    mov r8, rax
+
+    
+    
+__heap_insert_loop:
+    cmp rdi, 0                   ; if (child_index > 0)
+    je __heap_insert_end_loop
+    ;; now compare if the children is lesser than
+    
+    
+    
+__heap_insert_end_loop:         ; end of the loop
+    
 
     jmp __heap_insert_last
     
