@@ -92,9 +92,11 @@ __heap_get_parent:
 
     mov qword [rsp], 2          ; set the number 2
 
+    ;; p = (index - 1) / 2
     mov rax, rdi                ; move the child address to rax
     sub rax, 1                  ; subtract by 1
-    div qword [rsp]             ; get the parent address
+    div qword [rsp]             ; get the parent index
+
 
     add rsp, 8
     pop rbp
@@ -191,6 +193,7 @@ __heap_extract:
 __heap_insert:
     push rbp
     mov rbp, rsp
+    sub rsp, 8
 
     mov rax, qword [heap_size_free] ; mov the amount to rax
     cmp rax, HEAP_FREE_CAPACITY_SIZE
@@ -202,26 +205,45 @@ __heap_insert:
     add rax, qword [init_brk]   ; calculate the address
     mov qword [rax], rdi        ; put the new address
 
-    ;; Now calculate the parent address 
+    ;; Now calculate the parent index 
     mov rdi, qword [heap_size_free]
-    call __heap_get_parent
+    mov rsi, rdi                ; Get the child index
 
     ;; save the index
-    mov r8, rax
+    mov r9, rdi
+    mov r10, rsi
 
-    
     
 __heap_insert_loop:
-    cmp rdi, 0                   ; if (child_index > 0)
-    je __heap_insert_end_loop
-    ;; now compare if the children is lesser than
+    cmp rsi, 0                   ; if (child_index > 0)
+    je __heap_insert_last
     
-    
-    
-__heap_insert_end_loop:         ; end of the loop
-    
+    ;; Compare the sizes
+    call __heap_compare_sizes
+    cmp rax, 0
+    jle __heap_insert_last
 
-    jmp __heap_insert_last
+    mov rdi, r9                 ; Get the parent index
+    call __heap_get_address     ; Get the parent address
+    mov rbx, rax
+    
+    mov rdi, r10                ; Get the child address
+    call __heap_get_address
+    mov rdx, rax
+
+    ;; Swap the values
+    mov qword [rsp], qword [rdx] ; Copy the parent address
+    mov qword [rdx], qword [rbx] ; Put paste the child addres into the child space
+    mov qword [rbx], qword [rsp] ; Put the child address into the parent
+
+    mov rsi, r9                 ; paste now child has the parent index
+    mov rdi, r9
+    call __heap_get_parent      ; Get the parent index
+    mov rdi, rax
+    
+    ;;  repeat the loop
+    jmp __heap_insert_loop
+    
     
 __heap_insert_error:            ; If we get an error close the program
 
@@ -238,9 +260,9 @@ __heap_insert_error:            ; If we get an error close the program
     syscall
     
 __heap_insert_last: 
-    
+
     inc qword [heap_size_free]  ; Increment the size of the heap
-    
+    add rsp, 8    
     pop rbp
     ret
     
