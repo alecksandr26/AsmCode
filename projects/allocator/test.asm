@@ -52,16 +52,14 @@ loop:
     ;; if (rax % 2 == 0)
     mov rax, rdi
     div qword [two]
+    inc rbx 
     cmp rdx, NULL
-    jne continue
+    jne loop
 
     ;; otherwire we free the memory
     mov rdi, qword [addr]
     call free
-    
-continue:   
-   
-    inc rbx
+
     jmp loop
     
 

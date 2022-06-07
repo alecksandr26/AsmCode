@@ -40,15 +40,14 @@
     ;; the amount of free chucks that we have
     heap_size_free dq 0
 
+    ;; Variables sections
+    section .bss
     
-    section .bss                ; the variables 
-    
-    init_brk resq 1             ; the initial address of the heap 
-    free_heap resq 1            ; the address where we store the memory
+    init_brk resq 1             ; the initial address of the heap
+    free_heap resq 1            ; the address where we store the memory possible allocatable memory
     new_brk resq 1              ; the new address of the heap
 
     ;; heap variables
-    
     heap_root_addr resq 1            ; 8 bytes for the heap root address
 
     section .text
@@ -59,8 +58,6 @@
 
 
     ;; Some extra functions needed
-
-
 
     ;; void *__heap_get_child(void *parent, unsigned char child_type)
     ;; parent -> rdi        the parent index 
@@ -116,20 +113,20 @@ __heap_get_chuck_size:
 
     ;; void *__heap_get_address(unsigned long index)
     ;; index -> rdi the index 
-    ;; __heap_get_address: Calculate the address of some index
+    ;; __heap_get_address: Calculate the address of some index to be able to fetch data from it
 __heap_get_address:
     push rbp
     mov rbp, rsp
     sub rsp, 8
+    
     mov qword [rsp], 8
     
     mov rax, rdi
     mul qword [rsp]
     
-    add rax, qword [init_brk]
+    add rax, qword [free_heap]
 
-    ;;  Get the address
-    mov rax, qword [rax]
+    add rsp, 8
     pop rbp
     ret
 
@@ -145,7 +142,7 @@ __heap_compare_sizes:
     call __heap_get_address
     mov rdi, rax                ; Move the address to rdi
     call __heap_get_chuck_size
-    mov rbx, rax                ; Now move the size to rb
+    mov rbx, rax                ; Now move the size to rbx
 
     
     mov rdi, rsi                ; move the index of the child node
@@ -159,7 +156,7 @@ __heap_compare_sizes:
     ja __heap_compare_sizes_if
     cmp rax, rbx                ; else if (child_size == parent_size)
     je __heap_compare_sizes_else_if
-    mov rax, -1                 ; else
+    mov rax, -1                 ; else in the case where (child_size < parent_size)
     ret
     
 __heap_compare_sizes_if:
@@ -193,55 +190,53 @@ __heap_extract:
 __heap_insert:
     push rbp
     mov rbp, rsp
-    sub rsp, 8
-
-    mov rax, qword [heap_size_free] ; mov the amount to rax
-    cmp rax, HEAP_FREE_CAPACITY_SIZE
+    
+    mov rbx, rdi                ; Move the argument
+    mov rdi, qword [heap_size_free] ; mov the amount to rax
+    cmp rdi, HEAP_FREE_CAPACITY_SIZE
     je __heap_insert_error      ; Out of capacity
 
-    ;; First insert the node
-    mov rax, 8
-    mul qword [heap_size_free]  ; calculate the position of the new address
-    add rax, qword [init_brk]   ; calculate the address
-    mov qword [rax], rdi        ; put the new address
-
-    ;; Now calculate the parent index 
-    mov rdi, qword [heap_size_free]
-    mov rsi, rdi                ; Get the child index
-
-    ;; save the index
-    mov r9, rdi
-    mov r10, rsi
-
+    ;;  Get the address
+    call __heap_get_address
+    mov qword [rax], rbx        ; put the new address
     
 __heap_insert_loop:
-    cmp rsi, 0                   ; if (child_index > 0)
-    je __heap_insert_last
+    ;; Get the parent index
+    ;; rdi -> child index
+    call __heap_get_parent
+    mov r9, rax                 ; Save the parent posiion
+    mov r10, rdi                ; Save the children position
     
-    ;; Compare the sizes
-    call __heap_compare_sizes
-    cmp rax, 0
-    jle __heap_insert_last
-
-    mov rdi, r9                 ; Get the parent index
-    call __heap_get_address     ; Get the parent address
-    mov rbx, rax
-    
-    mov rdi, r10                ; Get the child address
-    call __heap_get_address
-    mov rdx, rax
-
-    ;; Swap the values
-    mov qword [rsp], qword [rdx] ; Copy the parent address
-    mov qword [rdx], qword [rbx] ; Put paste the child addres into the child space
-    mov qword [rbx], qword [rsp] ; Put the child address into the parent
-
-    mov rsi, r9                 ; paste now child has the parent index
-    mov rdi, r9
-    call __heap_get_parent      ; Get the parent index
+    mov rsi, r10                ; Move the children index
     mov rdi, rax
     
-    ;;  repeat the loop
+    cmp rsi, 0                   ; if (child_index == 0)
+    je __heap_insert_last
+    
+    ;; Compare the sizes | rdi -> parent index, rsi -> child index
+    call __heap_compare_sizes
+    cmp rax, 0
+    jl __heap_insert_last
+
+    mov rdi, r9                 ; Get the parent index
+    ;; Get an address | rdi -> index parent 
+    call __heap_get_address     ; Get the parent address
+    mov rbx, rax                ; Save parent address into the rbx 
+    
+    mov rdi, r10                ; Get the child address
+    ;; Get an address | rdi -> index child
+    call __heap_get_address
+
+    ;; Swap the address 
+    mov rdx, qword [rax] ; Copy the child address
+    mov rdi, qword [rbx] ; Put paste the parent addres into the child space
+    mov qword [rax], rdi
+    mov qword [rbx], rdx ; Put the child address into the parent space
+
+    ;; Now parent index is the child index 
+    mov rdi, r9
+    
+    ;;  repeat the loop until we sort the heap
     jmp __heap_insert_loop
     
     
@@ -262,7 +257,7 @@ __heap_insert_error:            ; If we get an error close the program
 __heap_insert_last: 
 
     inc qword [heap_size_free]  ; Increment the size of the heap
-    add rsp, 8    
+    
     pop rbp
     ret
     
@@ -361,36 +356,25 @@ __alloc_last:
     ;; addr -> rdi              ; the address of the page of memory to free
     ;; free: free a chunk of memory
 free:
-    push rbp
-    mov rbp, rsp
-    
-    ;; verified the address 
-
     ;; get the current address
-    mov rax, qword [curr_brk]
+    mov rax, qword [new_brk]
 
     sub rdi, 2                  ; subtract by 2
     cmp rax, rdi                ; if (rax < rdi)
     jb __free_error
 
     
-    ;; get the initial address
-    mov rax, qword [init_brk]
+    ;; get the initial address of the heap 
+    mov rax, qword [free_heap]
+    add rax, HEAP_FREE_CAPACITY  ; Calculate
 
     cmp rdi, rax                ; if (rdi < rax)
     jb __free_error
 
-    ;; first calculate the size of the free heap buffer
-    mov eax, 8             
-    mul dword [heap_size_free]              ; multiply the size with 8 bytes
-
-    ;; lets move the pointer
-    mov r8, qword [free_heap]  ; get the address of the buffer
-    add r8, rax                ; move the address of the buffer
-
-    ;; Now this is problematic this will become O(N) and we need O(logN)
-    mov qword [r8], rdi        ; allocate the free address
-    inc dword [heap_size_free]       ; increment the size of the free heap
+    ;;  If everything looks right try to insert to the heap another free location
+    add rdi, 2
+    call __heap_insert
+    
     
     jmp __free_last
     
@@ -407,7 +391,6 @@ __free_error:                   ; If we receive an invalid address
     syscall
     
 __free_last:
-    pop rbp
     ret
     
     
@@ -416,7 +399,3 @@ __free_last:
     ;; void collect()
     ;; collect: simple garbage collector to the heap
 collect:
-    
-    
-    
-    
