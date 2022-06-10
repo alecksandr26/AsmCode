@@ -139,7 +139,8 @@ __heap_get_address:
 __heap_compare_sizes:
     
     ;; Get the parent chunk size
-    call __heap_get_address
+    ;; rdi -> index 
+    call __heap_get_address     ; Get the address of the parent 
     mov rdi, rax                ; Move the address to rdi
     call __heap_get_chuck_size
     mov rbx, rax                ; Now move the size to rbx
@@ -188,17 +189,16 @@ __heap_extract:
     ;; addr -> rdi   The new address to insert 
     ;; __heap_insert: To insert a new chunk of memory
 __heap_insert:
-    push rbp
-    mov rbp, rsp
+    mov rbx, rdi                ; Move the address -> rbx
+    mov rdi, qword [heap_size_free] ; mov the size of the heap
     
-    mov rbx, rdi                ; Move the argument
-    mov rdi, qword [heap_size_free] ; mov the amount to rax
-    cmp rdi, HEAP_FREE_CAPACITY_SIZE
+    cmp rdi, HEAP_FREE_CAPACITY_SIZE ; check if there is enough space
     je __heap_insert_error      ; Out of capacity
 
-    ;;  Get the address
+    ;;  Get the address of the new index
+    ;; rdi -> child index
     call __heap_get_address
-    mov qword [rax], rbx        ; put the new address
+    mov qword [rax], rbx        ; put the new address or element to the heap
     
 __heap_insert_loop:
     ;; Get the parent index
@@ -255,15 +255,12 @@ __heap_insert_error:            ; If we get an error close the program
     syscall
     
 __heap_insert_last: 
-
     inc qword [heap_size_free]  ; Increment the size of the heap
-    
-    pop rbp
     ret
     
     
     ;; void *alloc(unsigned amount_bytes)
-    ;; amount_bytes -> edi      ; the amount of bytes that we want
+    ;; amount_bytes -> rdi      ; the amount of bytes that we want
     ;; alloc: return the amount the address of the page of the memory that we want
 alloc:
     push rbp
@@ -275,10 +272,10 @@ alloc:
     je __alloc_error
 
     ;; increment the real capcity by two bytes
-    add edi, 2
+    add rdi, 2
 
     ;; save the size
-    mov dword [rbp-8], edi
+    mov qword [rbp-8], rdi
 
     ;; get the current address of the brk
     mov rax, SYS_brk
@@ -312,7 +309,7 @@ __alloc_else:
     mov qword [new_brk], rax
 
     ;; get again the size
-    mov edi, dword [rbp-8]
+    mov rdi, qword [rbp-8]
 
     ;; create the new chuck of memory and incremenet the size of chunks 
     add qword [new_brk], rdi
@@ -330,8 +327,8 @@ __alloc_else:
     mov rax, qword [curr_brk]
 
     ;; take two bytes and put the size of chuck these are metadata
-    mov di, word [rbp - 8]
-    sub di, 2
+    mov rdi, qword [rbp - 8]
+    sub rdi, 2
     mov word [rax], di          ; put the size of chuck
     
     ;; increment the address by 2
