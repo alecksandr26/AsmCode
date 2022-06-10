@@ -24,7 +24,7 @@
     alloc_error_msg_len equ $ - alloc_error_msg
 
     two dq 2
-    count dq 0
+    count dq 1
 
 
     section .bss
@@ -36,8 +36,6 @@
     global _start
 _start:
     ;; running a new test
-    mov qword [count], 0x0
-    
 
 loop:
     mov rbx, qword [count]
@@ -48,10 +46,12 @@ loop:
     
     mov rdi, qword [count]
     call alloc
-    mov qword [addr], rax
-
+    
     cmp rax, NULL               ; rax == null ; jump error 
     je error                    ; if there is an error print this
+
+    ;; save the address
+    mov qword [addr], rax
     
     ;;  allocate the number
     mov rbx, qword [count]
@@ -59,9 +59,10 @@ loop:
 
     ;; if (rax % 2 == 0)
     mov rax, qword [count]
+    mov rdx, 0x0
     div qword [two]
     cmp rdx, NULL
-    jne loop
+    je loop
 
     ;; otherwire we free the memory
     mov rdi, qword [addr]

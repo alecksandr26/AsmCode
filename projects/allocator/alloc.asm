@@ -86,11 +86,13 @@ __heap_get_parent:
     push rbp
     mov rbp, rsp
     sub rsp, 8
+    
 
     mov qword [rsp], 2          ; set the number 2
 
     ;; p = (index - 1) / 2
     mov rax, rdi                ; move the child address to rax
+    mov rdx, 0x0
     sub rax, 1                  ; subtract by 1
     div qword [rsp]             ; get the parent index
 
@@ -100,9 +102,11 @@ __heap_get_parent:
     ret
 
     ;; short __heap_get_chunk_size(void *addr)
-    ;; addr -> rdi          The address of the chuck of memory
+    ;; addr -> rdi          The address to the chuck of memory
     ;; __heap_get_chunk_size: Return the size of the chunk of memory
 __heap_get_chuck_size:
+    ;; get the address
+    mov rdi, qword [rdi]
     
     ;; Get the size two bytes
     mov rax, 0
@@ -142,6 +146,7 @@ __heap_compare_sizes:
     ;; rdi -> index 
     call __heap_get_address     ; Get the address of the parent 
     mov rdi, rax                ; Move the address to rdi
+    ;; rdi -> address of the heap
     call __heap_get_chuck_size
     mov rbx, rax                ; Now move the size to rbx
 
@@ -153,7 +158,7 @@ __heap_compare_sizes:
     call __heap_get_chuck_size  ; Now get the chunk size
 
     ;; Now compare the sizes
-    cmp rax, rbx                ; if (child_size > parent_size)
+    cmp rbx, rax                ; if (child_size > parent_size)
     ja __heap_compare_sizes_if
     cmp rax, rbx                ; else if (child_size == parent_size)
     je __heap_compare_sizes_else_if
@@ -216,7 +221,7 @@ __heap_insert_loop:
     ;; Compare the sizes | rdi -> parent index, rsi -> child index
     call __heap_compare_sizes
     cmp rax, 0
-    jl __heap_insert_last
+    jge __heap_insert_last
 
     mov rdi, r9                 ; Get the parent index
     ;; Get an address | rdi -> index parent 
@@ -235,6 +240,8 @@ __heap_insert_loop:
 
     ;; Now parent index is the child index 
     mov rdi, r9
+    cmp rdi, 0
+    je __heap_insert_last
     
     ;;  repeat the loop until we sort the heap
     jmp __heap_insert_loop
