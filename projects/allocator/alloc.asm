@@ -265,6 +265,9 @@ __heap_insert_last:
     inc qword [heap_size_free]  ; Increment the size of the heap
     ret
     
+
+
+
     
     ;; void *alloc(unsigned amount_bytes)
     ;; amount_bytes -> rdi      ; the amount of bytes that we want
