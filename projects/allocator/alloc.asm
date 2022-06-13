@@ -61,7 +61,7 @@
 
     ;; void *__heap_get_child(void *parent, unsigned char child_type)
     ;; parent -> rdi        the parent index 
-    ;; child_type -> rdx    1 if the child is the left or 2 if the child is the right
+    ;; child_type -> rsi    1 if the child is the left or 2 if the child is the right
     ;; __heap_get_child: Return the index of the child depending if it is the right child or the left child
 __heap_get_child:
     push rbp
@@ -73,7 +73,7 @@ __heap_get_child:
     mov rax, rdi                ; Moving parent address to rax
     mul qword [rsp]             ; multiply with 2
 
-    add rax, rdx                ; sum rax + (2 or 1) depending 
+    add rax, rsi                ; sum rax + (2 or 1) depending 
 
     add rsp , 8
     pop rbp
@@ -173,19 +173,103 @@ __heap_compare_sizes_else_if:
     mov rax, 0
     ret
         
-    
-
 
     ;; void *__heap_extract()
-    ;; __heap_extract: Return the address of the greater chunk of memory
+    ;; __heap_extract: Return the address of the greater chunk of memory 
 __heap_extract:
     push rbp,
     mov rbp, rsp
 
-    
+    ;; Get the first element
+    mov rdi, 0
+    call __heap_get_address
+    mov r9, qword [rax]         ; Save the first address
+    dec qword [heap_size_free]
+    cmp qword [heap_size_free], 0
+    je __heap_extract_last      ; Finishing 
 
+    ;; Get the last chuck
+    mov rdi, qword [heap_size_free]
+    call __heap_get_address
+    mov rbx, qword [rax]        ; Save the last address
+
+    ;; Get the first chunk again
+    mov rdi, 0
+    call __heap_get_address
+    mov qword [rax], rbx        ; swap the first position with the last address
+
+    mov r10, 0                  ; Index pos
     
+__heap_extract_loop:
+    ;; calculate the children indexes
+    mov rdi, r10
+    mov rsi, 1
+    call __heap_get_child
+    mov r11, rax                ; save the index of the left child
+
+    mov rsi, 2
+    call __heap_get_child
+    mov r12, rax                ; save the index of the right chil
+
+
+    ;; check the left position
+    cmp r11, qword [heap_size_free]
+    jae __heap_extract_loop_first_if
+
+    mov rdi, r10
+    mov rsi, r11
+    call __heap_compare_sizes
+    cmp rax, 0
+    jbe __heap_extract_loop_first_if
     
+    mov rdx, r11                ; catch the left child index
+    jmp __heap_extract_loop_continue
+
+__heap_extract_loop_first_if:
+    mov rdx, r10                ; cacth the actual index
+    
+__heap_extract_loop_continue:
+    ;; check the right position 
+    cmp r12, qword [heap_size_free]
+    jae __heap_extract_loop_second_if
+
+    mov rdi, r10
+    mov rsi, r12
+    call __heap_compare_sizes
+    cmp rax, 0
+    jbe __heap_extract_loop_second_if
+
+    mov rdx, r12
+    jmp __heap_extract_loop_second_continue
+
+__heap_extract_loop_second_if:
+    mov rdx, r12
+
+__heap_extract_loop_second_continue:
+    ;; Compare if it is the same index 
+    cmp rdx, r10
+    je __heap_extract_last      ; if it is break the loop
+    
+    ;; otherwise swap the values and assing a new value
+
+    ;; firstly get the addresses
+    mov rdi, rdx
+    call __heap_get_address
+    mov rbx, rax
+    mov rdi, r10
+    call __heap_get_address
+
+    ;; swap
+    mov rdi, qword [rax]
+    mov rsi, qword [rbx]
+    mov qword [rax], rsi
+    mov qword [rbx], rdi
+    
+    mov r10, rdx
+    jmp __heap_extract_loop
+
+__heap_extract_last:
+    mov rax, r9                 ; Put the extracted address and return it
     pop rbp
     ret
 
@@ -264,10 +348,42 @@ __heap_insert_error:            ; If we get an error close the program
 __heap_insert_last: 
     inc qword [heap_size_free]  ; Increment the size of the heap
     ret
+
+
     
+    ;; bool __alloc_check_size(long space)
+    ;; space -> rdi
+    ;; __alloc_check_size: Takes the first chuck of memory and check if it has the enough space
+__alloc_check_size:
+    mov rbx, rdi                ; move the size
+    mov rdi, 0x0
+    ;; rdi -> index
+    call __heap_get_address     ; Get the address of the first node
+    mov rdi, rax
+    ;; rdi -> address of the index
+    call __heap_get_chuck_size  ; Get the size
+    
+    cmp rbx, rax                ; if (rbx <= rax)
+    jbe __alloc_check_size_enough ; If there is enough space
+
+    mov rax, 0
+    ret
+
+__alloc_check_size_enough:
+    mov rax, 1
+    ret
 
 
+    ;; void* __alloc_resize_chuck(void *addr, long new_size)
+    ;; rdi -> addr
+    ;; rsi -> new_size
+    ;; __alloc_resize_chuck: Resize all the chuck and if there left extra space
+    ;; insert that extra space into the heap and return the resize chuck
+__alloc_resize_chuck:
+    mov rax, rdi
+    ret
 
+  
     
     ;; void *alloc(unsigned amount_bytes)
     ;; amount_bytes -> rdi      ; the amount of bytes that we want
@@ -277,15 +393,43 @@ alloc:
     mov rbp, rsp
     sub rsp, 8                  ; Create the frame to store the amount_bytes
 
+    ;; save the size
+    mov qword [rbp-8], rdi
+
     ;; can't receive zero amount_bytes
     cmp edi, NULL
     je __alloc_error
 
-    ;; increment the real capcity by two bytes
-    add rdi, 2
+    ;; Check if there is free chucks
+    mov rax, qword [heap_size_free]
+    cmp rax, 1
+    jb __alloc_check_size_no_free_chucks
 
-    ;; save the size
-    mov qword [rbp-8], rdi
+    ;; if there check the size
+    ;; rdi -> the space needed
+    call __alloc_check_size
+    cmp rax, 0
+    je __alloc_check_size_no_free_chucks ; If the space is not enough jump and allocate one more
+
+    ;; If there is chuck extract it
+    call __heap_extract
+    
+    mov rdi, rax
+    mov rsi, qword [rbp-8]
+    
+    ;;  Resize the selected chuck of memory and return it
+    call __alloc_resize_chuck
+    
+    jmp __alloc_last
+
+__alloc_check_size_no_free_chucks:  
+    
+    ;; increment the real capcity by two bytes
+
+    
+    add qword [rbp-8], 2
+
+    mov rdi, qword [rbp-8]
 
     ;; get the current address of the brk
     mov rax, SYS_brk

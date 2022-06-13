@@ -1,19 +1,25 @@
 N = nasm -f elf64
 C = ld
-BINS = test.o alloc.o 
+CLANG = clang -no-pie
 
+EXT = main.o
+OBJS = alloc.o
+BINS = main ctest
 
-all: main
+all: main ctest
 
 alloc.o: alloc.asm
 	$(N) alloc.asm
 
-test.o: test.asm
-	$(N) test.asm
+main.o: test.asm
+	$(N) test.asm -o main.o
 
-main: $(BINS)
-	$(C) $(BINS) -o main
+main: $(EXT) $(OBJS)
+	$(C) $(EXT) $(OBJS) -o main
+
+ctest: $(OBJS)
+	$(CLANG) -ggdb $(OBJS) test.c
 
 clean:
-	rm $(BINS) main
+	rm $(OBJS) $(EXT) $(MAIN) 
 
