@@ -177,9 +177,6 @@ __heap_compare_sizes_else_if:
     ;; void *__heap_extract()
     ;; __heap_extract: Return the address of the greater chunk of memory 
 __heap_extract:
-    push rbp,
-    mov rbp, rsp
-
     ;; Get the first element
     mov rdi, 0
     call __heap_get_address
@@ -231,18 +228,14 @@ __heap_extract_loop_first_if:
 __heap_extract_loop_continue:
     ;; check the right position 
     cmp r12, qword [heap_size_free]
-    jae __heap_extract_loop_second_if
+    jae __heap_extract_loop_second_continue
 
     mov rdi, r10
     mov rsi, r12
     call __heap_compare_sizes
     cmp rax, 0
-    jbe __heap_extract_loop_second_if
+    jbe __heap_extract_loop_second_continue
 
-    mov rdx, r12
-    jmp __heap_extract_loop_second_continue
-
-__heap_extract_loop_second_if:
     mov rdx, r12
 
 __heap_extract_loop_second_continue:
@@ -270,7 +263,6 @@ __heap_extract_loop_second_continue:
 
 __heap_extract_last:
     mov rax, r9                 ; Put the extracted address and return it
-    pop rbp
     ret
 
 
@@ -380,7 +372,31 @@ __alloc_check_size_enough:
     ;; __alloc_resize_chuck: Resize all the chuck and if there left extra space
     ;; insert that extra space into the heap and return the resize chuck
 __alloc_resize_chuck:
-    mov rax, rdi
+    ;; Get the size of the new chuck of memory
+    mov r8, rdi
+    call __heap_get_chuck_size
+    sub rax, rsi
+
+    ;; Check if its worth rize if not
+    cmp rax, 3
+    jb __alloc_resize_chuck_last
+
+    ;; Set the new space to the chuck
+    mov rbx, r8
+    mov word [rbx-2], si
+
+    ;; Create the new chuck
+    add rbx, rsi                ; move the pointer
+    sub rax, 2
+    mov word [rbx], ax          ; add the new size
+    add rbx, 2                  ; Get the new address of chuck
+
+    ;; Insert the new chuck
+    mov rdi, rbx
+    call __heap_insert
+
+__alloc_resize_chuck_last:
+    mov rax, r8
     ret
 
   
