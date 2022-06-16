@@ -6,20 +6,19 @@ EXT = main.o
 OBJS = alloc.o
 BINS = main ctest
 
-all: main ctest
+all: main.out ctest.out
 
 alloc.o: alloc.asm
-	$(N) alloc.asm
+	$(N) $< -o $@
 
 main.o: test.asm
-	$(N) test.asm -o main.o
+	$(N) $< -o $@
 
-main: $(EXT) $(OBJS)
-	$(C) $(EXT) $(OBJS) -o main
+main.out: $(EXT) $(OBJS)
+	$(C) $(EXT) $(OBJS) -o $@
 
-ctest: $(OBJS)
-	$(CLANG) -ggdb $(OBJS) test.c
+ctest.out: test.c $(OBJS)
+	$(CLANG) -ggdb $(OBJS) $< -o $@
 
 clean:
-	rm $(OBJS) $(EXT) $(MAIN) 
-
+	rm $(OBJS) $(EXT) $(MAIN)

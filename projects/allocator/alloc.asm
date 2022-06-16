@@ -213,40 +213,40 @@ __heap_extract_loop:
     cmp r11, qword [heap_size_free]
     jae __heap_extract_loop_first_if
 
-    mov rdi, r10
-    mov rsi, r11
+    mov rdi, r11
+    mov rsi, r10
     call __heap_compare_sizes
     cmp rax, 0
-    jbe __heap_extract_loop_first_if
+    jle __heap_extract_loop_first_if
     
-    mov rdx, r11                ; catch the left child index
+    mov r13, r11                ; catch the left child index
     jmp __heap_extract_loop_continue
 
 __heap_extract_loop_first_if:
-    mov rdx, r10                ; cacth the actual index
+    mov r13, r10                ; cacth the actual index
     
 __heap_extract_loop_continue:
     ;; check the right position 
     cmp r12, qword [heap_size_free]
     jae __heap_extract_loop_second_continue
 
-    mov rdi, r10
-    mov rsi, r12
+    mov rdi, r12
+    mov rsi, r13
     call __heap_compare_sizes
     cmp rax, 0
-    jbe __heap_extract_loop_second_continue
+    jle __heap_extract_loop_second_continue
 
-    mov rdx, r12
+    mov r13, r12
 
 __heap_extract_loop_second_continue:
     ;; Compare if it is the same index 
-    cmp rdx, r10
+    cmp r13, r10
     je __heap_extract_last      ; if it is break the loop
     
     ;; otherwise swap the values and assing a new value
 
     ;; firstly get the addresses
-    mov rdi, rdx
+    mov rdi, r13
     call __heap_get_address
     mov rbx, rax
     mov rdi, r10
@@ -258,7 +258,7 @@ __heap_extract_loop_second_continue:
     mov qword [rax], rsi
     mov qword [rbx], rdi
     
-    mov r10, rdx
+    mov r10, r13
     jmp __heap_extract_loop
 
 __heap_extract_last:
@@ -373,8 +373,9 @@ __alloc_check_size_enough:
     ;; insert that extra space into the heap and return the resize chuck
 __alloc_resize_chuck:
     ;; Get the size of the new chuck of memory
-    mov r8, rdi
-    call __heap_get_chuck_size
+    mov r12, rdi
+    mov rax, 0
+    mov ax, word [rdi - 2]
     sub rax, rsi
 
     ;; Check if its worth rize if not
@@ -382,21 +383,18 @@ __alloc_resize_chuck:
     jb __alloc_resize_chuck_last
 
     ;; Set the new space to the chuck
-    mov rbx, r8
-    mov word [rbx-2], si
+    mov word [rdi-2], si
 
     ;; Create the new chuck
-    add rbx, rsi                ; move the pointer
+    add rdi, rsi                ; move the pointer
     sub rax, 2
-    mov word [rbx], ax          ; add the new size
-    add rbx, 2                  ; Get the new address of chuck
+    mov word [rdi], ax          ; add the new size
+    add rdi, 2                  ; Get the new address of chuck
 
-    ;; Insert the new chuck
-    mov rdi, rbx
     call __heap_insert
 
 __alloc_resize_chuck_last:
-    mov rax, r8
+    mov rax, r12
     ret
 
   
