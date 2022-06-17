@@ -1,5 +1,5 @@
 # Allocator
-This is my version of malloc in nasm, I decided to use the heap data structure.
+This is my version of malloc in nasm, I decided to use the heap data structure to organize the chucks of memory.
 
 ## Compiling
 To compiled and generate the `alloc.o` just run.
